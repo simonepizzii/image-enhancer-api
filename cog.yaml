@@ -1,24 +1,12 @@
 build:
-  python_version: "3.10"
+  gpu: true
+  system_packages:
+    - "libgl1-mesa-glx"
+    - "libglib2.0-0"
+  python_version: "3.12"
   python_packages:
-    - replicate
-    - pillow
-
-predict: "predict:Predictor"
-# cog.yaml
-# Definisce il tuo modello per Replicate
-
-build:
-  python_version: "3.10"
-  command: pip install -r requirements.txt
-
-predict:
-  inputs:
-    - name: input_image
-      type: image
-      description: "Upload an image to enhance"
-  output:
-    type: image
-    description: "Enhanced output image"
-
-  command: python predict.py --input_image $input_image --output output.png
+    - "torch==2.3.0"
+    - "torchvision==0.18.0"
+    - "pillow"
+    - "numpy"
+predict: "predict.py:Predictor"
