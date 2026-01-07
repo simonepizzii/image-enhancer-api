@@ -1,20 +1,19 @@
-import replicate
+from cog import BasePredictor, Input, Path
 from PIL import Image
-import io
-import base64
 
-class Predictor:
-    def predict(self, image: str):
+class Predictor(BasePredictor):
+    def setup(self):
+        """Nessun modello da caricare (per ora)"""
+        pass
+
+    def predict(self, image: Path = Input(description="Input image to enhance")) -> Path:
         """
-        image: base64 encoded image
+        Placeholder: restituisce l'immagine invariata.
+        Sostituisci questa logica con il tuo modello di enhancement.
         """
-
-        image_bytes = base64.b64decode(image)
-        img = Image.open(io.BytesIO(image_bytes))
-
-        output = replicate.run(
-            "dallibrand/background-removal",
-            input={"image": img}
-        )
-
-        return output
+        # Carica e assicura formato RGB
+        img = Image.open(image).convert("RGB")
+        # Salva output
+        output_path = "/tmp/output.png"
+        img.save(output_path)
+        return Path(output_path)
