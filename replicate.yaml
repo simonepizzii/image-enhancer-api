@@ -1,0 +1,11 @@
+name: image-enhancer
+version: "v1"
+description: Migliora immagini caricando una foto
+web: true
+inputs:
+  image:
+    type: image
+    required: true
+outputs:
+  enhanced_image:
+    type: image
