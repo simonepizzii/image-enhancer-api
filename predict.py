@@ -1,32 +1,36 @@
+# cog-disable-openapi-schema
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 from cog import BasePredictor, Input, Path
 from PIL import Image
-from rembg import remove
+import numpy as np
+from realesrgan import RealESRGANer
+from basicsr.archs.rrdbnet_arch import RRDBNet
 
 class Predictor(BasePredictor):
     def setup(self):
-        pass
+        model_path = os.path.join(os.path.dirname(__file__), "RealESRGAN_x2plus.pth")
+        self.model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=2)
+        self.upsampler = RealESRGANer(
+            scale=2,
+            model_path=model_path,
+            model=self.model,
+            tile=0,
+            tile_pad=10,
+            pre_pad=0,
+            half=False,
+            gpu_id=None
+        )
 
     def predict(
         self,
-        image: Path = Input(description="Upload a photo of a person, product, or object"),
-        format: str = Input(choices=["png", "jpg"], default="png", description="Output format (PNG = transparent background, JPG = solid background)"),
-        background_color: str = Input(default="#FFFFFF", description="Background color in hex (used only for JPG, e.g. #FF0000)")
+        image: Path = Input(description="Upload an image to enhance"),
+        scale: int = Input(default=2, choices=[2])
     ) -> Path:
-        input_img = Image.open(str(image)).convert("RGB")
-        # Usa modello leggero per CPU
-        output_img = remove(input_img, model_name="u2netp", post_process_mask=True)
-
-        if format == "png":
-            output_path = "/tmp/output.png"
-            output_img.save(output_path, "PNG")
-        else:
-            # Crea sfondo solido
-            r = int(background_color[1:3], 16)
-            g = int(background_color[3:5], 16)
-            b = int(background_color[5:7], 16)
-            bg = Image.new("RGB", output_img.size, (r, g, b))
-            bg.paste(output_img, mask=output_img.split()[-1])  # Usa alpha
-            output_path = "/tmp/output.jpg"
-            bg.save(output_path, "JPEG", quality=95)
-
+        img = Image.open(str(image)).convert("RGB")
+        img = np.array(img)
+        output, _ = self.upsampler.enhance(img, outscale=scale)
+        output_img = Image.fromarray(output)
+        output_path = "/tmp/output.jpg"
+        output_img.save(output_path, quality=95)
         return Path(output_path)
