@@ -8,23 +8,29 @@ class Predictor(BasePredictor):
     def predict(
         self,
         image: Path = Input(description="Upload an image to enhance"),
-        enhance: bool = Input(default=True, description="Apply sharpening and contrast"),
-        upscale: bool = Input(default=False, description="Double image size with LANCZOS")
+        mode: str = Input(choices=["photo", "screenshot", "anime"], default="photo")
     ) -> Path:
         img = Image.open(str(image)).convert("RGB")
 
-        if enhance:
-            # Unsharp Mask: simula nitidezza avanzata
-            blurred = img.filter(ImageFilter.GaussianBlur(radius=0.5))
-            img = Image.blend(blurred, img, 1.5)
-            
-            # Migliora contrasto leggermente
-            enhancer = ImageEnhance.Contrast(img)
-            img = enhancer.enhance(1.1)
+        if mode == "photo":
+            # Migliora foto reali
+            sharp = img.filter(ImageFilter.UnsharpMask(radius=1.2, percent=150, threshold=3))
+            contrast = ImageEnhance.Contrast(sharp).enhance(1.1)
+            bright = ImageEnhance.Brightness(contrast).enhance(1.05)
+            img = bright
 
-        if upscale:
-            w, h = img.size
-            img = img.resize((w*2, h*2), Image.LANCZOS)
+        elif mode == "screenshot":
+            # Migliora screenshot (testo più nitido)
+            img = img.filter(ImageFilter.SHARPEN)
+            img = img.filter(ImageFilter.SMOOTH_MORE)
+
+        elif mode == "anime":
+            # Migliora anime-style
+            img = img.filter(ImageFilter.UnsharpMask(radius=1.0, percent=180, threshold=0))
+
+        # Upscale x2 con LANCZOS (miglior qualità non-AI)
+        w, h = img.size
+        img = img.resize((w*2, h*2), Image.LANCZOS)
 
         output_path = "/tmp/output.jpg"
         img.save(output_path, quality=95)
